@@ -1,0 +1,59 @@
+<div class="magnet-wrapper">
+  <div class="magnet-inner">
+    Hover Me
+  </div>
+</div>
+
+
+.magnet-wrapper {
+  display: inline-block;
+  position: relative;
+}
+
+.magnet-inner {
+  display: inline-block;
+  padding: 20px 40px;
+  background: #111;
+  color: #fff;
+  font-size: 18px;
+  border-radius: 8px;
+  transition: transform 0.5s ease-in-out;
+  will-change: transform;
+  cursor: pointer;
+}
+
+
+const magnet = document.querySelector('.magnet-wrapper');
+const inner = magnet.querySelector('.magnet-inner');
+
+const padding = 100;
+const magnetStrength = 2;
+const activeTransition = 'transform 0.3s ease-out';
+const inactiveTransition = 'transform 0.5s ease-in-out';
+
+let isActive = false;
+
+window.addEventListener('mousemove', (e) => {
+  const rect = magnet.getBoundingClientRect();
+
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+
+  const distX = Math.abs(centerX - e.clientX);
+  const distY = Math.abs(centerY - e.clientY);
+
+  if (distX < rect.width / 2 + padding && distY < rect.height / 2 + padding) {
+    isActive = true;
+
+    const offsetX = (e.clientX - centerX) / magnetStrength;
+    const offsetY = (e.clientY - centerY) / magnetStrength;
+
+    inner.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
+    inner.style.transition = activeTransition;
+  } else {
+    isActive = false;
+
+    inner.style.transform = `translate3d(0px, 0px, 0)`;
+    inner.style.transition = inactiveTransition;
+  }
+});

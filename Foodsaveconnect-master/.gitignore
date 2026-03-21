@@ -11,5 +11,5 @@ node_modules/
 *.log
 media/
 static/collected/
-play/__MACOSX/
-2026-*.txt
+frontend/__MACOSX/
+*.export.txt

@@ -120,7 +120,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [
-    ('play', BASE_DIR / 'play'),
+    ('frontend', BASE_DIR / 'frontend'),
 ]
 
 LOGIN_URL = '/signin/'
