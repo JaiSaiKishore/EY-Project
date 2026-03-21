@@ -1,0 +1,589 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodSaver Connect - Dashboard</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+    <!-- App Styles -->
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/theme-light.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/effects.css' %}">
+</head>
+<body>
+    <!-- ============================================================
+         DASHBOARD APPLICATION
+         ============================================================ -->
+    <div class="app-container" id="app-dashboard">
+
+        <!-- Hidden sidebar (kept for script.js compatibility) -->
+        <nav class="sidebar" aria-hidden="true">
+            <ul class="nav-links">
+                <li class="active" data-target="dashboard"><span>Dashboard</span></li>
+                <li data-target="donate"><span>Donate Food</span></li>
+                <li data-target="volunteer"><span>Volunteer/Scout</span></li>
+                <li data-target="leaderboard"><span>Karma Leaderboard</span></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- ==================== TOP HEADER ==================== -->
+            <header class="top-header">
+                <div class="header-brand">
+                    <i class="fa-solid fa-seedling"></i>
+                    <span>FoodSaver Connect</span>
+                </div>
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Search locations, food, or users...">
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-icon"><i class="fa-solid fa-bell"></i><span class="badge">3</span></button>
+                    <div class="header-user">
+                        <img src="https://ui-avatars.com/api/?name=User&background=61D2B4&color=fff" alt="Avatar" class="header-avatar">
+                        <div>
+                            <div class="header-user-name">User</div>
+                            <div class="header-user-karma">1,250 Karma</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ==================== CONTENT SECTIONS ==================== -->
+            <div class="content-sections">
+
+                <!-- ========== DASHBOARD / HOME ========== -->
+                <section id="dashboard" class="section active">
+                    <div class="section-header">
+                        <h2>Live Overview</h2>
+                        <p>Real-time impact in your city right now.</p>
+                    </div>
+
+                    <!-- Stats Row -->
+                    <div class="stats-grid">
+                        <div class="stat-card orange">
+                            <div class="stat-icon"><i class="fa-solid fa-bowl-food"></i></div>
+                            <div class="stat-info">
+                                <h3>2,540 kg</h3>
+                                <p>Food Saved This Month</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green">
+                            <div class="stat-icon"><i class="fa-solid fa-face-smile"></i></div>
+                            <div class="stat-info">
+                                <h3>1,820</h3>
+                                <p>People Nourished</p>
+                            </div>
+                        </div>
+                        <div class="stat-card blue">
+                            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                            <div class="stat-info">
+                                <h3>340</h3>
+                                <p>Active Volunteers</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Map + Activity Feed -->
+                    <div class="dashboard-grid">
+                        <div class="map-container glass-panel">
+                            <div class="panel-header">
+                                <h3><i class="fa-solid fa-map"></i> Live Food Area Map</h3>
+                                <div class="panel-actions">
+                                    <select id="map-filter-urgency" class="btn btn-outline btn-sm">
+                                        <option value="all">All Urgencies</option>
+                                        <option value="High">High Urgency</option>
+                                        <option value="Medium">Medium Urgency</option>
+                                        <option value="Low">Low Urgency</option>
+                                    </select>
+                                    <button class="btn btn-outline btn-sm" id="scan-radius-btn"><i class="fa-solid fa-radar"></i> 3km Radar</button>
+                                    <button class="btn btn-outline btn-sm btn-heat-toggle" id="toggle-heatmap-btn"><i class="fa-solid fa-fire"></i> Heatmap</button>
+                                </div>
+                            </div>
+                            <div class="map-placeholder" id="dashboard-map"></div>
+                        </div>
+
+                        <div class="activity-feed glass-panel">
+                            <h3><i class="fa-solid fa-bolt"></i> Recent Rescues</h3>
+                            <ul class="activity-list">
+                                <li class="activity-item">
+                                    <div class="activity-icon bg-green"><i class="fa-solid fa-check"></i></div>
+                                    <div class="activity-details">
+                                        <p><strong>Rahul V.</strong> delivered 5kg of rice to <strong>Platform 2</strong></p>
+                                        <span class="time">10 mins ago</span>
+                                    </div>
+                                </li>
+                                <li class="activity-item">
+                                    <div class="activity-icon bg-orange"><i class="fa-solid fa-plus"></i></div>
+                                    <div class="activity-details">
+                                        <p><strong>Taj Hotel</strong> posted 20 meals for pickup</p>
+                                        <span class="time">25 mins ago</span>
+                                    </div>
+                                </li>
+                                <li class="activity-item">
+                                    <div class="activity-icon bg-blue"><i class="fa-solid fa-map-pin"></i></div>
+                                    <div class="activity-details">
+                                        <p><strong>Aisha M.</strong> marked a new cluster need in <strong>Dharavi</strong></p>
+                                        <span class="time">1 hour ago</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== DONATE FOOD ========== -->
+                <section id="donate" class="section">
+                    <div class="section-header">
+                        <h2>Post Surplus Food</h2>
+                        <p>Share excess food with those who need it.</p>
+                    </div>
+
+                    <div class="form-container glass-panel">
+                        <form class="elegant-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Food Item Description</label>
+                                    <input type="text" id="food-desc" placeholder="e.g., Vegetable Biryani, 50 portions">
+                                </div>
+                                <div class="form-group">
+                                    <label>Quantity (approx. in kg or servings)</label>
+                                    <input type="number" id="food-qty" placeholder="e.g., 10">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Time Prepared (12-hour)</label>
+                                    <div class="time-slide-container" id="prep-time-container"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Consume By (Expiry Time)</label>
+                                    <div class="time-slide-container" id="consume-time-container"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group upload-area" id="upload-area">
+                                <div id="ai-scanner-overlay" class="ai-overlay">
+                                    <div class="scanner-line"></div>
+                                    <h4><i class="fa-solid fa-robot"></i> AI Validating...</h4>
+                                </div>
+                                <div id="ai-result-tag" class="ai-result-tag">
+                                    <i class="fa-solid fa-check-circle"></i> Fresh Food Detected (98%)
+                                </div>
+                                <i class="fa-solid fa-cloud-arrow-up" id="upload-icon-main"></i>
+                                <p id="upload-text-main">Drag & drop photos of the food here, or <label for="food-photo-input" class="browse-link">Browse</label></p>
+                                <p class="sub-text" id="upload-subtext-main">AI feature: Scans for freshness before listing.</p>
+                                <img id="food-preview-img" class="upload-preview" alt="">
+                                <input type="file" id="food-photo-input" accept="image/*" hidden>
+                            </div>
+
+                            <div class="form-group checkbox-row">
+                                <input type="checkbox" id="self-deliver-checkbox">
+                                <label for="self-deliver-checkbox">I will deliver this food myself</label>
+                            </div>
+
+                            <div id="nearby-locations-container" class="nearby-panel">
+                                <h4><i class="fa-solid fa-satellite-dish"></i> Scanning for Needy Locations within 3km...</h4>
+                                <div id="nearby-list"></div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-primary btn-large w-100" id="post-food-btn">Post Food for Rescue <i class="fa-solid fa-arrow-right"></i></button>
+                                <button type="button" class="btn btn-secondary btn-large w-100" id="self-deliver-btn" hidden disabled><i class="fa-solid fa-map-location-dot"></i> Select Location First</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- ========== VOLUNTEER / SCOUT ========== -->
+                <section id="volunteer" class="section">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-satellite-dish icon-secondary"></i> Field Intelligence Hub</h2>
+                        <p>Real-time scout operations -- report, track, and deliver.</p>
+                    </div>
+
+                    <!-- Scout Stats -->
+                    <div class="stats-grid stats-grid-4" id="scout-stats-grid">
+                        <div class="stat-card stat-orange">
+                            <div class="stat-icon bg-secondary"><i class="fa-solid fa-map-pin"></i></div>
+                            <div class="stat-info">
+                                <h3 id="scout-stat-marked">47</h3>
+                                <p>Locations Marked</p>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-green">
+                            <div class="stat-icon bg-primary"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                            <div class="stat-info">
+                                <h3 id="scout-stat-delivered">32</h3>
+                                <p>Deliveries Done</p>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-blue">
+                            <div class="stat-icon bg-accent"><i class="fa-solid fa-star"></i></div>
+                            <div class="stat-info">
+                                <h3 id="scout-stat-karma">1,250</h3>
+                                <p>Karma Points</p>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-purple">
+                            <div class="stat-icon bg-purple"><i class="fa-solid fa-award"></i></div>
+                            <div class="stat-info">
+                                <h3 id="scout-stat-rank">Food Hero</h3>
+                                <p>Current Rank</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Badges -->
+                    <div id="scout-badges" class="glass-panel badges-row">
+                        <span class="badges-label"><i class="fa-solid fa-certificate"></i> Badges:</span>
+                        <span class="badge-mini sustainability">First Report</span>
+                        <span class="badge-mini sustainability">Speed Deliver</span>
+                        <span class="badge-mini sustainability">Veteran Scout</span>
+                    </div>
+
+                    <!-- Action Cards -->
+                    <div class="action-cards">
+                        <div class="action-card neon-border">
+                            <h3><i class="fa-solid fa-location-crosshairs"></i> Mark Needy Location</h3>
+                            <p>Found people in need? Pin their GPS location with detailed intel.</p>
+                            <button class="btn btn-secondary" id="drop-pin-btn"><i class="fa-solid fa-crosshairs"></i> Report GPS Point</button>
+                        </div>
+                        <div class="action-card neon-border delay-1">
+                            <h3><i class="fa-solid fa-hand-holding-heart"></i> Accept Delivery</h3>
+                            <p>Surplus food is waiting. Claim a task and start delivering now.</p>
+                            <button class="btn btn-primary" id="find-pickups-btn"><i class="fa-solid fa-truck-fast"></i> Find Pickups</button>
+                        </div>
+                        <div class="action-card neon-border delay-2">
+                            <h3><i class="fa-solid fa-bookmark"></i> Bookmarked Spots</h3>
+                            <p>Quick access to your saved frequently-visited locations.</p>
+                            <button class="btn btn-outline btn-accent" id="open-bookmarks-btn"><i class="fa-solid fa-star"></i> My Bookmarks</button>
+                        </div>
+                    </div>
+
+                    <!-- Scout Map -->
+                    <div class="glass-panel map-section">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-earth-asia"></i> Scout Operations Map</h3>
+                            <div class="map-legend">
+                                <span class="legend-item"><span class="legend-dot dot-red"></span> High</span>
+                                <span class="legend-item"><span class="legend-dot dot-yellow"></span> Medium</span>
+                                <span class="legend-item"><span class="legend-dot dot-green"></span> Low</span>
+                            </div>
+                        </div>
+                        <div id="scout-map" class="map-embed"></div>
+                    </div>
+
+                    <!-- Active Requests -->
+                    <div class="requests-section">
+                        <div class="requests-header">
+                            <h3><i class="fa-solid fa-list-check"></i> Active Needy Requests</h3>
+                            <button class="btn btn-outline btn-sm" id="refresh-requests-btn"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+                        </div>
+                        <div id="active-requests-list" class="scout-requests-grid">
+                            <div class="scout-request-card glass-panel">
+                                <div class="scout-req-header">
+                                    <div class="scout-req-status pending">Pending</div>
+                                    <span class="scout-req-time"><i class="fa-regular fa-clock"></i> 180 mins left</span>
+                                </div>
+                                <h4>Slum near Train Station</h4>
+                                <div class="scout-req-meta">
+                                    <span><i class="fa-solid fa-users"></i> 25 people</span>
+                                    <span><i class="fa-solid fa-triangle-exclamation text-danger"></i> High</span>
+                                    <span><i class="fa-solid fa-children text-warning"></i> Children</span>
+                                    <span><i class="fa-solid fa-leaf text-success"></i> Veg</span>
+                                </div>
+                                <p class="scout-req-notes">Women and children present, needs immediate attention</p>
+                                <div class="req-actions">
+                                    <button class="btn btn-primary btn-sm flex-1"><i class="fa-solid fa-motorcycle"></i> Deliver Here</button>
+                                    <button class="btn btn-outline btn-sm"><i class="fa-solid fa-clock-rotate-left"></i> Extend</button>
+                                    <button class="btn btn-outline btn-sm btn-accent"><i class="fa-solid fa-bookmark"></i></button>
+                                </div>
+                            </div>
+                            <div class="scout-request-card glass-panel">
+                                <div class="scout-req-header">
+                                    <div class="scout-req-status accepted">Accepted</div>
+                                    <span class="scout-req-time"><i class="fa-regular fa-clock"></i> 95 mins left</span>
+                                </div>
+                                <h4>Community Park Bridge</h4>
+                                <div class="scout-req-meta">
+                                    <span><i class="fa-solid fa-users"></i> 15 people</span>
+                                    <span><i class="fa-solid fa-triangle-exclamation text-warning"></i> Medium</span>
+                                    <span><i class="fa-solid fa-people-group text-accent"></i> Mixed</span>
+                                    <span><i class="fa-solid fa-utensils text-secondary"></i> Any</span>
+                                </div>
+                                <p class="scout-req-notes">Elderly and families under the bridge, need dinner meals</p>
+                                <div class="req-actions">
+                                    <button class="btn btn-primary btn-sm flex-1"><i class="fa-solid fa-motorcycle"></i> Deliver Here</button>
+                                    <button class="btn btn-outline btn-sm"><i class="fa-solid fa-clock-rotate-left"></i> Extend</button>
+                                    <button class="btn btn-outline btn-sm btn-accent"><i class="fa-solid fa-bookmark"></i></button>
+                                </div>
+                            </div>
+                            <div class="scout-request-card glass-panel">
+                                <div class="scout-req-header">
+                                    <div class="scout-req-status in-transit">In Transit</div>
+                                    <span class="scout-req-time"><i class="fa-regular fa-clock"></i> 40 mins left</span>
+                                </div>
+                                <h4>Railway Platform 4</h4>
+                                <div class="scout-req-meta">
+                                    <span><i class="fa-solid fa-users"></i> 40 people</span>
+                                    <span><i class="fa-solid fa-triangle-exclamation text-danger"></i> High</span>
+                                    <span><i class="fa-solid fa-people-group text-accent"></i> General</span>
+                                    <span><i class="fa-solid fa-drumstick-bite text-secondary"></i> Non-veg</span>
+                                </div>
+                                <p class="scout-req-notes">Large group of migrant workers -- any food type accepted</p>
+                                <div class="req-actions">
+                                    <button class="btn btn-primary btn-sm flex-1"><i class="fa-solid fa-camera"></i> Upload Proof</button>
+                                    <button class="btn btn-outline btn-sm"><i class="fa-solid fa-clock-rotate-left"></i> Extend</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== LEADERBOARD ========== -->
+                <section id="leaderboard" class="section">
+                    <div class="section-header leaderboard-header">
+                        <div>
+                            <h2>Karma Leaderboard</h2>
+                            <p>Top heroes rescuing food and feeding communities this week.</p>
+                        </div>
+                        <div class="leaderboard-tabs">
+                            <button class="btn btn-outline active tab-btn" data-target="board-scout">Scouts</button>
+                            <button class="btn btn-outline tab-btn" data-target="board-donor">Donors</button>
+                        </div>
+                    </div>
+
+                    <!-- Scout Board -->
+                    <div id="board-scout" class="leaderboard-board active">
+                        <div class="podium">
+                            <div class="podium-place second">
+                                <div class="avatar"><img src="https://ui-avatars.com/api/?name=Aisha+M&background=f97316&color=fff" alt="Aisha M."></div>
+                                <h4>Aisha M. <span class="badge-mini sustainability"><i class="fa-solid fa-leaf"></i></span></h4>
+                                <p>3,200 pts</p>
+                                <div class="block">2</div>
+                            </div>
+                            <div class="podium-place first">
+                                <i class="fa-solid fa-crown crown"></i>
+                                <div class="avatar"><img src="https://ui-avatars.com/api/?name=Rahul+V&background=61D2B4&color=fff" alt="Rahul V."></div>
+                                <h4>Rahul V. <span class="badge-mini sustainability"><i class="fa-solid fa-bolt"></i> Elite Scout</span></h4>
+                                <p>4,550 pts</p>
+                                <div class="block">1</div>
+                            </div>
+                            <div class="podium-place third">
+                                <div class="avatar"><img src="https://ui-avatars.com/api/?name=Vikram+S&background=3b82f6&color=fff" alt="Vikram S."></div>
+                                <h4>Vikram S.</h4>
+                                <p>2,890 pts</p>
+                                <div class="block">3</div>
+                            </div>
+                        </div>
+                        <div class="leaderboard-list glass-panel">
+                            <div class="list-item"><div class="rank">4</div><div class="details"><h4>Priya K.</h4></div><div class="points">2,100 pts</div></div>
+                            <div class="list-item"><div class="rank">5</div><div class="details"><h4>Amit R.</h4></div><div class="points">1,950 pts</div></div>
+                        </div>
+                    </div>
+
+                    <!-- Donor Board -->
+                    <div id="board-donor" class="leaderboard-board" style="display:none;">
+                        <div class="podium">
+                            <div class="podium-place second">
+                                <div class="avatar"><img src="https://ui-avatars.com/api/?name=Grand+Inn&background=f97316&color=fff" alt="Grand Inn"></div>
+                                <h4>Grand Inn</h4>
+                                <p>15,200 pts</p>
+                                <div class="block">2</div>
+                            </div>
+                            <div class="podium-place first">
+                                <i class="fa-solid fa-crown crown"></i>
+                                <div class="avatar"><img src="https://ui-avatars.com/api/?name=Taj+Hotel&background=61D2B4&color=fff" alt="Taj Hotel"></div>
+                                <h4>Taj Hotel <span class="badge-mini sustainability"><i class="fa-solid fa-star"></i> Mega Donor</span></h4>
+                                <p>24,550 pts</p>
+                                <div class="block">1</div>
+                            </div>
+                            <div class="podium-place third">
+                                <div class="avatar"><img src="https://ui-avatars.com/api/?name=NGO+Care&background=3b82f6&color=fff" alt="NGO Care"></div>
+                                <h4>NGO Care</h4>
+                                <p>12,890 pts</p>
+                                <div class="block">3</div>
+                            </div>
+                        </div>
+                        <div class="leaderboard-list glass-panel">
+                            <div class="list-item"><div class="rank">4</div><div class="details"><h4>Daily Bakery</h4></div><div class="points">8,100 pts</div></div>
+                            <div class="list-item"><div class="rank">5</div><div class="details"><h4>Community Fridge Hub</h4></div><div class="points">6,950 pts</div></div>
+                        </div>
+                    </div>
+                </section>
+
+            </div><!-- /content-sections -->
+        </main>
+    </div><!-- /app-dashboard -->
+
+    <!-- ============================================================
+         OVERLAYS & MODALS
+         ============================================================ -->
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scout Report Modal -->
+    <div id="scout-mark-modal" class="modal-overlay">
+        <div class="glass-panel form-container modal-card">
+            <button class="modal-close" id="close-scout-modal"><i class="fa-solid fa-xmark"></i></button>
+            <h2><i class="fa-solid fa-map-pin icon-secondary"></i> Report Needy Location</h2>
+            <p class="modal-subtitle">Provide detailed field intelligence for accurate response.</p>
+
+            <div id="scout-gps-status" class="gps-status">
+                <i class="fa-solid fa-satellite-dish fa-fade"></i> Acquiring Live GPS Coordinate...
+            </div>
+
+            <div class="form-group">
+                <label><i class="fa-solid fa-location-dot"></i> Detected Address</label>
+                <input type="text" id="scout-loc-address" placeholder="Auto-detecting from GPS..." readonly class="input-readonly">
+            </div>
+
+            <div id="scout-mini-map" class="map-embed map-mini"></div>
+
+            <form id="scout-location-form">
+                <div class="form-row form-row-1">
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-tag"></i> Location Title / Landmark</label>
+                        <input type="text" id="scout-loc-name" placeholder="e.g., Slum near Train Station" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-users"></i> Estimated Headcount</label>
+                        <input type="number" id="scout-loc-people" min="1" value="10" required>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-triangle-exclamation"></i> Urgency Level</label>
+                        <select id="scout-loc-urgency" required>
+                            <option value="High">High Urgency</option>
+                            <option value="Medium" selected>Medium Urgency</option>
+                            <option value="Low">Low Urgency</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-people-group"></i> Category</label>
+                        <select id="scout-loc-category" required>
+                            <option value="Children">Children</option>
+                            <option value="Elderly">Elderly</option>
+                            <option value="Mixed" selected>Mixed</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-utensils"></i> Food Type Needed</label>
+                        <select id="scout-loc-foodtype" required>
+                            <option value="Veg">Vegetarian</option>
+                            <option value="Non-veg">Non-Vegetarian</option>
+                            <option value="Any" selected>Any Food</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row form-row-1">
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-note-sticky"></i> Contextual Notes (Optional)</label>
+                        <textarea id="scout-loc-notes" rows="2" placeholder="Women and children present, needs hygiene kits..."></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-camera"></i> Site Photo (Optional)</label>
+                    <div class="scout-photo-upload" id="scout-photo-drop">
+                        <input type="file" id="scout-loc-photo" accept="image/*" hidden>
+                        <div id="scout-photo-preview" class="photo-drop-zone">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <p>Click to upload or drag & drop photo</p>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="scout-loc-lat">
+                <input type="hidden" id="scout-loc-lng">
+                <button type="button" class="btn btn-primary w-100" id="submit-scout-loc-btn" disabled>
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload to Network
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Live Tracking Overlay -->
+    <div id="live-tracking-overlay" class="tracking-overlay">
+        <div class="tracking-map" id="tracking-map-bg"></div>
+        <div class="tracking-details glass-panel">
+            <h3 id="tracking-status">On the way to deliver!</h3>
+            <p class="eta">Arriving in <span id="eta-time">15 mins</span></p>
+            <div class="tracking-progress">
+                <div class="progress-bar"><div class="progress-fill" id="track-progress-fill"></div></div>
+                <div class="progress-steps">
+                    <span class="step active"><i class="fa-solid fa-box"></i><br><small>Packed</small></span>
+                    <span class="step active"><i class="fa-solid fa-motorcycle"></i><br><small>On way</small></span>
+                    <span class="step"><i class="fa-solid fa-hand-holding-heart"></i><br><small>Delivered</small></span>
+                </div>
+            </div>
+            <button class="btn btn-secondary w-100" id="close-tracking-btn">Close Tracking</button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         BOTTOM NAVIGATION
+         ============================================================ -->
+    <nav class="bottom-nav">
+        <button class="bottom-nav-item active" data-target="dashboard">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </button>
+        <button class="bottom-nav-item" data-target="donate">
+            <i class="fa-solid fa-hand-holding-heart"></i>
+            <span>Donate</span>
+        </button>
+        <button class="bottom-nav-item" data-target="volunteer">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span>Scout</span>
+        </button>
+        <button class="bottom-nav-item" data-target="leaderboard">
+            <i class="fa-solid fa-trophy"></i>
+            <span>Karma</span>
+        </button>
+        <a href="{% url 'signout' %}" class="bottom-nav-item nav-signout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Logout</span>
+        </a>
+    </nav>
+
+    <!-- ============================================================
+         SCRIPTS
+         ============================================================ -->
+    <script src="{% static 'core/js/script.js' %}"></script>
+    <script src="{% static 'core/js/effects.js' %}"></script>
+    {% if authenticated %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var displayName = "{{ display_name|escapejs }}";
+        if (displayName) {
+            var el = document.querySelector('.header-user-name');
+            if (el) el.textContent = displayName;
+            var av = document.querySelector('.header-avatar');
+            if (av) av.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName) + '&background=61D2B4&color=fff';
+        }
+    });
+    </script>
+    {% endif %}
+</body>
+</html>

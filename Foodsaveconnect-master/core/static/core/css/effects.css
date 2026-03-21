@@ -1,0 +1,167 @@
+/*
+ * FoodSaver Connect - Bottom Navbar + Layout
+ */
+
+/* ===== LAYOUT: Hide sidebar, full-width main ===== */
+.app-container {
+  flex-direction: column !important;
+  height: 100vh;
+}
+
+.sidebar {
+  display: none !important;
+}
+
+.main-content {
+  width: 100% !important;
+  padding-bottom: 72px;
+}
+
+/* ===== BOTTOM NAVBAR ===== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #fff;
+  border-top: 1px solid #e8ecf1;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item i {
+  font-size: 19px;
+  color: #999;
+  transition: color 0.2s ease;
+}
+
+.bottom-nav-item span {
+  font-size: 11px;
+  font-weight: 500;
+  color: #999;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+
+.bottom-nav-item:hover {
+  background: rgba(97, 210, 180, 0.08);
+}
+
+.bottom-nav-item:hover i,
+.bottom-nav-item:hover span {
+  color: #61D2B4;
+}
+
+/* Active tab */
+.bottom-nav-item.active {
+  background: rgba(97, 210, 180, 0.12);
+}
+
+.bottom-nav-item.active i {
+  color: #61D2B4;
+}
+
+.bottom-nav-item.active span {
+  color: #61D2B4;
+  font-weight: 600;
+}
+
+/* Signout hover */
+.bottom-nav-item.nav-signout:hover {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.bottom-nav-item.nav-signout:hover i,
+.bottom-nav-item.nav-signout:hover span {
+  color: #ef4444;
+}
+
+/* ===== TOP HEADER: logo + user info ===== */
+.top-header {
+  gap: 15px;
+}
+
+.top-header .header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #333;
+  flex-shrink: 0;
+}
+
+.top-header .header-brand i {
+  color: #61D2B4;
+  font-size: 1.4rem;
+}
+
+.top-header .header-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.top-header .header-user img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #61D2B4;
+}
+
+.top-header .header-user-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.top-header .header-user-karma {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .bottom-nav-item {
+    padding: 8px 12px;
+  }
+
+  .bottom-nav-item i {
+    font-size: 17px;
+  }
+
+  .bottom-nav-item span {
+    font-size: 10px;
+  }
+
+  .top-header .header-brand span {
+    display: none;
+  }
+
+  .search-bar {
+    width: 200px !important;
+  }
+}
