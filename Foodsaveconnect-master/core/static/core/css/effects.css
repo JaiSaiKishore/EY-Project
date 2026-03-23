@@ -4,6 +4,7 @@
 
 /* ===== LAYOUT: Hide sidebar, full-width main ===== */
 .app-container {
+  display: flex !important;
   flex-direction: column !important;
   height: 100vh;
 }
@@ -15,6 +16,17 @@
 .main-content {
   width: 100% !important;
   padding-bottom: 72px;
+}
+
+/* Fix: hide tracking overlay and modal by default (old CSS shows them) */
+#live-tracking-overlay,
+.tracking-overlay {
+  display: none !important;
+}
+
+#scout-mark-modal,
+.modal-overlay {
+  display: none !important;
 }
 
 /* ===== BOTTOM NAVBAR ===== */

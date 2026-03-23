@@ -1,0 +1,153 @@
+/*
+ * Lightweight grid + navbar replacement for Bootstrap
+ * Only the classes actually used in the landing page
+ */
+
+/* ===== Box Sizing ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ===== Container ===== */
+.container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* ===== Grid: Row + Columns ===== */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -15px;
+}
+
+.row > [class*="col-"] {
+  padding: 0 15px;
+  width: 100%;
+}
+
+/* Column widths */
+.col-xs-12 { width: 100%; }
+.col-md-3  { width: 25%; }
+.col-md-4  { width: 33.3333%; }
+.col-md-6  { width: 50%; }
+.col-md-10 { width: 83.3333%; }
+.col-md-12 { width: 100%; }
+.col-lg-3  { width: 25%; }
+.col-lg-4  { width: 33.3333%; }
+.col-lg-6  { width: 50%; }
+.col-lg-8  { width: 66.6667%; }
+
+/* ===== Flexbox Utilities ===== */
+.justify-content-center,
+.justify-content-md-center {
+  justify-content: center;
+}
+
+.justify-content-end {
+  justify-content: flex-end;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.mr-auto {
+  margin-right: auto;
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+/* ===== Navbar ===== */
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+}
+
+.navbar .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-brand {
+  text-decoration: none;
+}
+
+.navbar-header {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-collapse {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-nav {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item {
+  list-style: none;
+}
+
+.nav-link {
+  text-decoration: none;
+  display: inline-block;
+}
+
+/* Collapse: always visible on desktop, hidden on mobile handled by slicknav */
+.collapse {
+  display: flex;
+}
+
+/* ===== Form Controls ===== */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+}
+
+/* ===== Hidden utility ===== */
+.hidden {
+  display: none;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 991px) {
+  .col-md-3  { width: 50%; }
+  .col-md-4  { width: 50%; }
+  .col-md-10 { width: 100%; }
+  .col-lg-4  { width: 100%; }
+  .col-lg-6  { width: 100%; }
+  .col-lg-8  { width: 100%; }
+}
+
+@media (max-width: 767px) {
+  .col-sm-6  { width: 50%; }
+  .col-md-3  { width: 50%; }
+  .col-md-4  { width: 100%; }
+  .col-md-6  { width: 100%; }
+
+  .navbar-collapse,
+  .collapse {
+    display: none;
+  }
+}
