@@ -1,0 +1,239 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donor Dashboard - FoodSaver Connect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/theme-light.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/effects.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+</head>
+<body>
+    <div class="dash-app">
+        <!-- Top Header -->
+        <header class="dash-header">
+            <div class="dash-brand"><i class="fa-solid fa-seedling"></i> FoodSaver Connect</div>
+            <div class="dash-user">
+                <span class="dash-notif-btn" id="notif-btn"><i class="fa-solid fa-bell"></i><span class="notif-dot"></span></span>
+                <img src="https://ui-avatars.com/api/?name=User&background=61D2B4&color=fff" alt="Avatar" class="dash-avatar" id="user-avatar">
+                <span class="dash-username" id="user-name">User</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dash-main">
+            <div class="dash-content">
+
+                <!-- ===== HOME TAB ===== -->
+                <section class="dash-tab active" id="tab-home">
+                    <h2>Welcome back, <span id="greeting-name">Donor</span></h2>
+                    <p class="dash-subtitle">Your food rescue impact at a glance.</p>
+
+                    <div class="impact-grid">
+                        <div class="impact-card"><div class="impact-icon orange"><i class="fa-solid fa-bowl-food"></i></div><div class="impact-info"><h3 id="imp-donations">12</h3><p>Donations</p></div></div>
+                        <div class="impact-card"><div class="impact-icon green"><i class="fa-solid fa-truck-ramp-box"></i></div><div class="impact-info"><h3 id="imp-delivered">10</h3><p>Delivered</p></div></div>
+                        <div class="impact-card"><div class="impact-icon blue"><i class="fa-solid fa-users"></i></div><div class="impact-info"><h3 id="imp-people">380</h3><p>People Fed</p></div></div>
+                        <div class="impact-card"><div class="impact-icon purple"><i class="fa-solid fa-map-pin"></i></div><div class="impact-info"><h3 id="imp-locations">8</h3><p>Locations Helped</p></div></div>
+                    </div>
+
+                    <!-- My Active Listings -->
+                    <div class="dash-panel">
+                        <div class="panel-top"><h3><i class="fa-solid fa-list"></i> My Active Listings</h3></div>
+                        <div id="my-listings" class="listing-cards">
+                            <div class="empty-state"><i class="fa-solid fa-inbox"></i><p>No active listings. Post surplus food to get started.</p></div>
+                        </div>
+                    </div>
+
+                    <!-- Nearby Hotspots Preview -->
+                    <div class="dash-panel">
+                        <div class="panel-top"><h3><i class="fa-solid fa-fire"></i> Nearby Hunger Hotspots</h3></div>
+                        <div id="donor-map" class="dash-map"></div>
+                    </div>
+                </section>
+
+                <!-- ===== POST FOOD TAB ===== -->
+                <section class="dash-tab" id="tab-post">
+                    <h2><i class="fa-solid fa-plus-circle"></i> Post Surplus Food</h2>
+                    <p class="dash-subtitle">Fill in the details to list your surplus food for rescue.</p>
+
+                    <div class="dash-panel">
+                        <form id="food-form" class="dash-form">
+                            <div class="form-row-2">
+                                <div class="field"><label>Food Description</label><input type="text" id="f-desc" placeholder="e.g., Vegetable Biryani, 50 portions" required></div>
+                                <div class="field"><label>Food Type</label><select id="f-type"><option value="Veg">Vegetarian</option><option value="Non-veg">Non-Vegetarian</option><option value="Any" selected>Any</option></select></div>
+                            </div>
+                            <div class="form-row-2">
+                                <div class="field"><label>Estimated Servings</label><input type="number" id="f-qty" placeholder="e.g., 30" required min="1"></div>
+                                <div class="field"><label>Packaging Available?</label><select id="f-packaging"><option value="1">Yes</option><option value="0" selected>No</option></select></div>
+                            </div>
+                            <div class="form-row-2">
+                                <div class="field"><label>Ready Time</label><input type="datetime-local" id="f-ready" required></div>
+                                <div class="field"><label>Expiry Time</label><input type="datetime-local" id="f-expiry" required></div>
+                            </div>
+                            <div class="form-row-2">
+                                <div class="field"><label>Pickup From</label><input type="datetime-local" id="f-pickup-from"></div>
+                                <div class="field"><label>Pickup Until</label><input type="datetime-local" id="f-pickup-until"></div>
+                            </div>
+                            <div class="field"><label>Pickup Address</label><input type="text" id="f-address" placeholder="Auto-detect or enter manually"><button type="button" class="gps-btn" id="f-gps"><i class="fa-solid fa-crosshairs"></i></button></div>
+                            <div class="form-row-2">
+                                <div class="field"><label>Contact Person</label><input type="text" id="f-contact" placeholder="Name"></div>
+                                <div class="field"><label>Contact Phone</label><input type="tel" id="f-phone" placeholder="+91 98765 43210"></div>
+                            </div>
+                            <div class="field"><label>Special Instructions</label><textarea id="f-instructions" rows="2" placeholder="Landmarks, loading help, etc."></textarea></div>
+
+                            <div class="field"><label>Photo</label>
+                                <div class="upload-zone" id="f-upload-zone">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <p>Click or drag to upload food photo</p>
+                                    <input type="file" id="f-photo" accept="image/*" hidden>
+                                </div>
+                            </div>
+
+                            <div class="check-row"><input type="checkbox" id="f-hygiene"><label for="f-hygiene">I declare this food was prepared hygienically and is safe to consume</label></div>
+                            <div class="check-row"><input type="checkbox" id="f-self-deliver"><label for="f-self-deliver">I will deliver this food myself</label></div>
+                            <div class="check-row"><input type="checkbox" id="f-save-template"><label for="f-save-template">Save as template for quick re-posting</label></div>
+
+                            <!-- Nearby hotspots shown after GPS -->
+                            <div id="nearby-spots" class="nearby-spots" style="display:none;">
+                                <h4><i class="fa-solid fa-fire"></i> Suggested Hunger Hotspots Nearby</h4>
+                                <div id="nearby-list"></div>
+                            </div>
+
+                            <div class="form-actions-row">
+                                <button type="submit" class="btn-action btn-primary-action"><i class="fa-solid fa-paper-plane"></i> Post for Rescue</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- ===== TRACKING TAB ===== -->
+                <section class="dash-tab" id="tab-track">
+                    <h2><i class="fa-solid fa-route"></i> Donation Tracking</h2>
+                    <p class="dash-subtitle">Live status of your donations.</p>
+
+                    <div id="tracking-list" class="tracking-cards">
+                        <div class="empty-state"><i class="fa-solid fa-route"></i><p>No active deliveries to track.</p></div>
+                    </div>
+                </section>
+
+                <!-- ===== TEMPLATES TAB ===== -->
+                <section class="dash-tab" id="tab-templates">
+                    <h2><i class="fa-solid fa-copy"></i> Saved Templates</h2>
+                    <p class="dash-subtitle">Quickly re-post recurring food surplus.</p>
+
+                    <div id="templates-list" class="listing-cards">
+                        <div class="empty-state"><i class="fa-solid fa-copy"></i><p>No saved templates yet. Check "Save as template" when posting.</p></div>
+                    </div>
+                </section>
+
+                <!-- ===== NOTIFICATIONS TAB ===== -->
+                <section class="dash-tab" id="tab-notifs">
+                    <h2><i class="fa-solid fa-bell"></i> Notifications</h2>
+                    <p class="dash-subtitle">Updates on your donations and deliveries.</p>
+                    <div id="notifs-list" class="notif-cards">
+                        <div class="empty-state"><i class="fa-solid fa-bell-slash"></i><p>No notifications yet.</p></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Bottom Nav -->
+        <nav class="dash-bottom-nav">
+            <button class="nav-tab active" data-tab="tab-home"><i class="fa-solid fa-house"></i><span>Home</span></button>
+            <button class="nav-tab" data-tab="tab-post"><i class="fa-solid fa-plus-circle"></i><span>Post Food</span></button>
+            <button class="nav-tab" data-tab="tab-track"><i class="fa-solid fa-route"></i><span>Track</span></button>
+            <button class="nav-tab" data-tab="tab-templates"><i class="fa-solid fa-copy"></i><span>Templates</span></button>
+            <a href="{% url 'signout' %}" class="nav-tab nav-signout"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a>
+        </nav>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var displayName = "{{ display_name|escapejs }}";
+        if (displayName) {
+            document.getElementById('user-name').textContent = displayName;
+            document.getElementById('greeting-name').textContent = displayName.split(' ')[0];
+            document.getElementById('user-avatar').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName) + '&background=61D2B4&color=fff';
+        }
+
+        // Tab switching
+        var tabs = document.querySelectorAll('.nav-tab[data-tab]');
+        var sections = document.querySelectorAll('.dash-tab');
+        tabs.forEach(function(t) {
+            t.addEventListener('click', function() {
+                tabs.forEach(function(b) { b.classList.remove('active'); });
+                t.classList.add('active');
+                sections.forEach(function(s) { s.classList.remove('active'); });
+                document.getElementById(t.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Notification button goes to notifs tab
+        document.getElementById('notif-btn').addEventListener('click', function() {
+            tabs.forEach(function(b) { b.classList.remove('active'); });
+            sections.forEach(function(s) { s.classList.remove('active'); });
+            document.getElementById('tab-notifs').classList.add('active');
+        });
+
+        // Fetch donor impact
+        fetch('/api/donor-impact/').then(r => r.json()).then(function(d) {
+            document.getElementById('imp-donations').textContent = d.total_donations;
+            document.getElementById('imp-delivered').textContent = d.delivered;
+            document.getElementById('imp-people').textContent = d.people_fed;
+            document.getElementById('imp-locations').textContent = d.locations_helped;
+        }).catch(function(){});
+
+        // Init map
+        var map = L.map('donor-map').setView([13.0827, 80.2707], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'OSM'}).addTo(map);
+
+        // GPS for pickup
+        var gpsBtn = document.getElementById('f-gps');
+        if (gpsBtn) {
+            gpsBtn.addEventListener('click', function() {
+                gpsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    document.getElementById('f-address').value = 'Lat: ' + pos.coords.latitude.toFixed(4) + ', Lng: ' + pos.coords.longitude.toFixed(4);
+                    gpsBtn.innerHTML = '<i class="fa-solid fa-check" style="color:#2d9a7a"></i>';
+                    // Fetch nearby hotspots
+                    fetch('/api/food/nearby_hotspots/?lat=' + pos.coords.latitude + '&lng=' + pos.coords.longitude + '&radius=5')
+                        .then(r => r.json()).then(function(spots) {
+                            if (spots.length) {
+                                var list = document.getElementById('nearby-list');
+                                list.innerHTML = '';
+                                document.getElementById('nearby-spots').style.display = '';
+                                spots.forEach(function(s) {
+                                    list.innerHTML += '<div class="hotspot-card"><strong>' + s.name + '</strong><span>' + s.people_count + ' people, ' + s.urgency + '</span></div>';
+                                });
+                            }
+                        }).catch(function(){});
+                }, function() { gpsBtn.innerHTML = '<i class="fa-solid fa-crosshairs"></i>'; });
+            });
+        }
+
+        // Upload zone click
+        var uploadZone = document.getElementById('f-upload-zone');
+        var fileInput = document.getElementById('f-photo');
+        if (uploadZone) uploadZone.addEventListener('click', function() { fileInput.click(); });
+
+        // Form submit
+        document.getElementById('food-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = e.target.querySelector('.btn-action');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Posting...';
+            setTimeout(function() {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Posted!';
+                btn.style.background = '#2d9a7a';
+                setTimeout(function() { btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Post for Rescue'; btn.style.background = ''; }, 2000);
+            }, 1000);
+        });
+    });
+    </script>
+</body>
+</html>

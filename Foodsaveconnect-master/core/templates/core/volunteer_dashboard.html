@@ -1,0 +1,256 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout Dashboard - FoodSaver Connect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <link rel="stylesheet" href="{% static 'core/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/theme-light.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/effects.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/dashboard.css' %}">
+</head>
+<body>
+    <div class="dash-app">
+        <!-- Top Header -->
+        <header class="dash-header">
+            <div class="dash-brand"><i class="fa-solid fa-seedling"></i> FoodSaver Connect</div>
+            <div class="dash-user">
+                <span class="dash-notif-btn" id="notif-btn"><i class="fa-solid fa-bell"></i><span class="notif-dot"></span></span>
+                <img src="https://ui-avatars.com/api/?name=User&background=3b82f6&color=fff" alt="Avatar" class="dash-avatar" id="user-avatar">
+                <span class="dash-username" id="user-name">User</span>
+            </div>
+        </header>
+
+        <main class="dash-main">
+            <div class="dash-content">
+
+                <!-- ===== HOME TAB ===== -->
+                <section class="dash-tab active" id="tab-home">
+                    <h2>Scout HQ, <span id="greeting-name">Volunteer</span></h2>
+                    <p class="dash-subtitle">Your rescue stats and active missions.</p>
+
+                    <div class="impact-grid">
+                        <div class="impact-card"><div class="impact-icon orange"><i class="fa-solid fa-map-pin"></i></div><div class="impact-info"><h3 id="s-marked">47</h3><p>Spots Marked</p></div></div>
+                        <div class="impact-card"><div class="impact-icon green"><i class="fa-solid fa-truck-ramp-box"></i></div><div class="impact-info"><h3 id="s-delivered">32</h3><p>Deliveries</p></div></div>
+                        <div class="impact-card"><div class="impact-icon blue"><i class="fa-solid fa-star"></i></div><div class="impact-info"><h3 id="s-karma">1,250</h3><p>Karma Points</p></div></div>
+                        <div class="impact-card"><div class="impact-icon purple"><i class="fa-solid fa-award"></i></div><div class="impact-info"><h3 id="s-rank">Rookie</h3><p>Rank</p></div></div>
+                    </div>
+
+                    <!-- Badges -->
+                    <div class="badges-bar" id="badges-bar">
+                        <span class="badge-label"><i class="fa-solid fa-certificate"></i> Badges:</span>
+                    </div>
+
+                    <!-- Live Map -->
+                    <div class="dash-panel">
+                        <div class="panel-top">
+                            <h3><i class="fa-solid fa-earth-asia"></i> Live Rescue Map</h3>
+                            <div class="map-filters">
+                                <select id="filter-urgency"><option value="all">All Urgency</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
+                                <select id="filter-food"><option value="all">All Food</option><option value="Veg">Veg</option><option value="Non-veg">Non-veg</option></select>
+                            </div>
+                        </div>
+                        <div class="map-legend-bar">
+                            <span><span class="dot red"></span> Hunger Spot</span>
+                            <span><span class="dot green"></span> Available Food</span>
+                        </div>
+                        <div id="scout-map" class="dash-map dash-map-tall"></div>
+                    </div>
+
+                    <!-- Active Requests -->
+                    <div class="dash-panel">
+                        <div class="panel-top"><h3><i class="fa-solid fa-list-check"></i> Available Rescues</h3><button class="btn-sm-action" id="refresh-btn"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button></div>
+                        <div id="available-rescues" class="rescue-cards">
+                            <div class="empty-state"><i class="fa-solid fa-binoculars"></i><p>No available rescues right now. Check back soon.</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===== MARK SPOT TAB ===== -->
+                <section class="dash-tab" id="tab-mark">
+                    <h2><i class="fa-solid fa-location-crosshairs"></i> Mark Hunger Hotspot</h2>
+                    <p class="dash-subtitle">Pin a GPS location where people need food.</p>
+
+                    <div class="dash-panel">
+                        <div id="mark-gps-status" class="gps-bar"><i class="fa-solid fa-satellite-dish fa-fade"></i> Acquiring GPS...</div>
+                        <div id="mark-map" class="dash-map"></div>
+
+                        <form id="mark-form" class="dash-form">
+                            <div class="field"><label>Location Name / Landmark</label><input type="text" id="m-name" placeholder="e.g., Slum near Train Station" required></div>
+                            <div class="form-row-2">
+                                <div class="field"><label>Estimated People</label><input type="number" id="m-people" value="10" min="1" required></div>
+                                <div class="field"><label>Urgency</label><select id="m-urgency"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select></div>
+                            </div>
+                            <div class="form-row-2">
+                                <div class="field"><label>Category</label><select id="m-category"><option value="Children">Children</option><option value="Elderly">Elderly</option><option value="Mixed" selected>Mixed</option><option value="General">General</option></select></div>
+                                <div class="field"><label>Food Type Needed</label><select id="m-food"><option value="Veg">Veg</option><option value="Non-veg">Non-veg</option><option value="Any" selected>Any</option></select></div>
+                            </div>
+                            <div class="form-row-2">
+                                <div class="field"><label>Active Meal Time</label><select id="m-meal"><option value="Breakfast">Breakfast</option><option value="Lunch">Lunch</option><option value="Dinner">Dinner</option><option value="Any" selected>Any</option></select></div>
+                                <div class="field"><label>Meals Needed</label><input type="number" id="m-meals" value="10" min="1"></div>
+                            </div>
+                            <div class="field"><label>Notes</label><textarea id="m-notes" rows="2" placeholder="Context: women and children, hygiene needs, etc."></textarea></div>
+                            <div class="field"><label>Site Photo</label>
+                                <div class="upload-zone" id="m-upload-zone"><i class="fa-solid fa-camera"></i><p>Click to upload photo</p><input type="file" id="m-photo" accept="image/*" hidden></div>
+                            </div>
+                            <input type="hidden" id="m-lat"><input type="hidden" id="m-lng">
+                            <div class="form-actions-row"><button type="submit" class="btn-action btn-secondary-action" id="m-submit" disabled><i class="fa-solid fa-cloud-arrow-up"></i> Report Hotspot</button></div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- ===== MY DELIVERIES TAB ===== -->
+                <section class="dash-tab" id="tab-deliveries">
+                    <h2><i class="fa-solid fa-motorcycle"></i> My Deliveries</h2>
+                    <p class="dash-subtitle">Active and completed rescue missions.</p>
+
+                    <div id="my-deliveries" class="rescue-cards">
+                        <div class="empty-state"><i class="fa-solid fa-motorcycle"></i><p>No deliveries yet. Claim a rescue to get started.</p></div>
+                    </div>
+                </section>
+
+                <!-- ===== HISTORY TAB ===== -->
+                <section class="dash-tab" id="tab-history">
+                    <h2><i class="fa-solid fa-clock-rotate-left"></i> Spot History</h2>
+                    <p class="dash-subtitle">Previously reported locations. Re-verify to keep data fresh.</p>
+
+                    <div id="spot-history" class="rescue-cards">
+                        <div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i><p>No history yet.</p></div>
+                    </div>
+                </section>
+
+                <!-- ===== NOTIFICATIONS TAB ===== -->
+                <section class="dash-tab" id="tab-notifs">
+                    <h2><i class="fa-solid fa-bell"></i> Notifications</h2>
+                    <p class="dash-subtitle">Nearby rescues and delivery updates.</p>
+                    <div id="notifs-list" class="notif-cards">
+                        <div class="empty-state"><i class="fa-solid fa-bell-slash"></i><p>No notifications yet.</p></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Bottom Nav -->
+        <nav class="dash-bottom-nav">
+            <button class="nav-tab active" data-tab="tab-home"><i class="fa-solid fa-house"></i><span>Home</span></button>
+            <button class="nav-tab" data-tab="tab-mark"><i class="fa-solid fa-location-crosshairs"></i><span>Mark Spot</span></button>
+            <button class="nav-tab" data-tab="tab-deliveries"><i class="fa-solid fa-motorcycle"></i><span>Deliveries</span></button>
+            <button class="nav-tab" data-tab="tab-history"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
+            <a href="{% url 'signout' %}" class="nav-tab nav-signout"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a>
+        </nav>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var displayName = "{{ display_name|escapejs }}";
+        if (displayName) {
+            document.getElementById('user-name').textContent = displayName;
+            document.getElementById('greeting-name').textContent = displayName.split(' ')[0];
+            document.getElementById('user-avatar').src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(displayName) + '&background=3b82f6&color=fff';
+        }
+
+        // Tab switching
+        var tabs = document.querySelectorAll('.nav-tab[data-tab]');
+        var sections = document.querySelectorAll('.dash-tab');
+        tabs.forEach(function(t) {
+            t.addEventListener('click', function() {
+                tabs.forEach(function(b) { b.classList.remove('active'); });
+                t.classList.add('active');
+                sections.forEach(function(s) { s.classList.remove('active'); });
+                document.getElementById(t.dataset.tab).classList.add('active');
+            });
+        });
+
+        document.getElementById('notif-btn').addEventListener('click', function() {
+            tabs.forEach(function(b) { b.classList.remove('active'); });
+            sections.forEach(function(s) { s.classList.remove('active'); });
+            document.getElementById('tab-notifs').classList.add('active');
+        });
+
+        // Fetch scout stats
+        fetch('/api/scout-stats/').then(r => r.json()).then(function(d) {
+            document.getElementById('s-marked').textContent = d.total_marked;
+            document.getElementById('s-delivered').textContent = d.completed_deliveries;
+            document.getElementById('s-karma').textContent = d.karma_points.toLocaleString();
+            document.getElementById('s-rank').textContent = d.rank;
+            var bar = document.getElementById('badges-bar');
+            d.badges.forEach(function(b) { bar.innerHTML += '<span class="badge-chip">' + b + '</span>'; });
+        }).catch(function(){});
+
+        // Init scout map
+        var scoutMap = L.map('scout-map').setView([13.0827, 80.2707], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'OSM'}).addTo(scoutMap);
+
+        // Init mark map
+        var markMap = L.map('mark-map').setView([13.0827, 80.2707], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'OSM'}).addTo(markMap);
+        var markMarker = null;
+
+        // GPS for mark spot
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                var lat = pos.coords.latitude, lng = pos.coords.longitude;
+                document.getElementById('m-lat').value = lat;
+                document.getElementById('m-lng').value = lng;
+                document.getElementById('mark-gps-status').innerHTML = '<i class="fa-solid fa-check-circle" style="color:#2d9a7a"></i> GPS Locked: ' + lat.toFixed(4) + ', ' + lng.toFixed(4);
+                document.getElementById('m-submit').disabled = false;
+                markMap.setView([lat, lng], 16);
+                markMarker = L.marker([lat, lng]).addTo(markMap).bindPopup('Your location').openPopup();
+
+                scoutMap.setView([lat, lng], 13);
+            }, function() {
+                document.getElementById('mark-gps-status').innerHTML = '<i class="fa-solid fa-xmark" style="color:#ef4444"></i> GPS denied. Enter coordinates manually.';
+            });
+        }
+
+        // Upload zone click
+        document.querySelectorAll('.upload-zone').forEach(function(zone) {
+            zone.addEventListener('click', function() { zone.querySelector('input[type=file]').click(); });
+        });
+
+        // Mark form submit
+        document.getElementById('mark-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('m-submit');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Reporting...';
+            setTimeout(function() {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Reported!';
+                btn.style.background = '#2d9a7a';
+                setTimeout(function() { btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Report Hotspot'; btn.style.background = ''; }, 2000);
+            }, 1000);
+        });
+
+        // Load hotspots on map
+        fetch('/api/locations/').then(r => r.json()).then(function(locs) {
+            var results = locs.results || locs;
+            results.forEach(function(loc) {
+                var color = loc.urgency === 'High' ? '#ef4444' : loc.urgency === 'Medium' ? '#eab308' : '#22c55e';
+                L.circleMarker([loc.lat, loc.lng], {radius: 8, color: color, fillColor: color, fillOpacity: 0.7})
+                    .bindPopup('<b>' + loc.name + '</b><br>' + loc.people_count + ' people, ' + loc.urgency)
+                    .addTo(scoutMap);
+            });
+        }).catch(function(){});
+
+        // Load available food on map
+        fetch('/api/food/').then(r => r.json()).then(function(food) {
+            var results = food.results || food;
+            results.forEach(function(f) {
+                if (f.pickup_lat && f.pickup_lng) {
+                    L.circleMarker([f.pickup_lat, f.pickup_lng], {radius: 8, color: '#61D2B4', fillColor: '#61D2B4', fillOpacity: 0.7})
+                        .bindPopup('<b>' + f.description + '</b><br>' + f.quantity + ' servings')
+                        .addTo(scoutMap);
+                }
+            });
+        }).catch(function(){});
+    });
+    </script>
+</body>
+</html>
