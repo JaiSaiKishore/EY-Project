@@ -76,11 +76,17 @@ def signin_view(request):
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
+        selected_role = request.POST.get('role', 'donor')
 
         user = authenticate(request, username=email, password=password)
         if user is not None:
-            login(request, user)
-            return redirect('dashboard')
+            actual_role = _get_user_role(user)
+            if actual_role != selected_role:
+                role_label = 'Donor' if actual_role == 'donor' else 'Volunteer Scout'
+                error = f'This account is registered as a {role_label}. Please select the correct role.'
+            else:
+                login(request, user)
+                return redirect('dashboard')
         else:
             error = 'Invalid email or password.'
 
