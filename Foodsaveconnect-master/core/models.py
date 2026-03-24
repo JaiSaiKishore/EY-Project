@@ -196,3 +196,49 @@ class ScoutBookmark(models.Model):
 
     def __str__(self):
         return f"{self.name} by {self.scout.username}"
+
+
+class Rating(models.Model):
+    reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ratings_given')
+    reviewee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ratings_received')
+    delivery_task = models.ForeignKey(DeliveryTask, on_delete=models.CASCADE, related_name='ratings')
+    score = models.IntegerField(choices=[(i, str(i)) for i in range(1, 6)])
+    comments = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('reviewer', 'delivery_task')
+
+    def __str__(self):
+        return f"{self.reviewer.username} rated {self.reviewee.username}: {self.score}/5"
+
+
+class TrustScore(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='trust_score')
+    average_rating = models.FloatField(default=0.0)
+    total_reviews = models.IntegerField(default=0)
+
+    def recalculate(self):
+        ratings = Rating.objects.filter(reviewee=self.user)
+        self.total_reviews = ratings.count()
+        if self.total_reviews > 0:
+            self.average_rating = round(ratings.aggregate(avg=models.Avg('score'))['avg'], 2)
+        else:
+            self.average_rating = 0.0
+        self.save()
+
+    def __str__(self):
+        return f"{self.user.username}: {self.average_rating}/5 ({self.total_reviews} reviews)"
+
+
+class ChatMessage(models.Model):
+    delivery_task = models.ForeignKey(DeliveryTask, on_delete=models.CASCADE, related_name='chat_messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"{self.sender.username}: {self.content[:50]}"

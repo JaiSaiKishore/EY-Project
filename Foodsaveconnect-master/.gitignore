@@ -13,3 +13,6 @@ media/
 static/collected/
 frontend/__MACOSX/
 *.export.txt
+*.venv/
+implementation_plan.md
+2026-*.txt

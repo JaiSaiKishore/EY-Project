@@ -1,7 +1,9 @@
+import json
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from django.conf import settings as django_settings
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, action
@@ -9,10 +11,11 @@ from rest_framework.exceptions import ValidationError
 from django.db import models as db_models
 from django.utils import timezone
 from datetime import timedelta
-from .models import FoodListing, NeedyLocation, DeliveryTask, ScoutBookmark, UserProfile, Notification
+import google.generativeai as genai
+from .models import FoodListing, NeedyLocation, DeliveryTask, ScoutBookmark, UserProfile, Notification, Rating, TrustScore, ChatMessage
 from .serializers import (
     FoodListingSerializer, NeedyLocationSerializer, DeliveryTaskSerializer,
-    ScoutBookmarkSerializer, NotificationSerializer
+    ScoutBookmarkSerializer, NotificationSerializer, RatingSerializer, TrustScoreSerializer, ChatMessageSerializer
 )
 
 
@@ -340,6 +343,72 @@ class ScoutBookmarkViewSet(viewsets.ModelViewSet):
             serializer.save(scout=user)
 
 
+class RatingViewSet(viewsets.ModelViewSet):
+    serializer_class = RatingSerializer
+
+    def get_queryset(self):
+        qs = Rating.objects.all().order_by('-created_at')
+        task_id = self.request.query_params.get('task')
+        reviewee_id = self.request.query_params.get('reviewee')
+        if task_id:
+            qs = qs.filter(delivery_task_id=task_id)
+        if reviewee_id:
+            qs = qs.filter(reviewee_id=reviewee_id)
+        return qs
+
+    def perform_create(self, serializer):
+        rating = serializer.save(reviewer=self.request.user)
+        trust, _ = TrustScore.objects.get_or_create(user=rating.reviewee)
+        trust.recalculate()
+
+    @action(detail=False, methods=['get'])
+    def my_trust_score(self, request):
+        if not request.user.is_authenticated:
+            return Response({'average_rating': 0, 'total_reviews': 0})
+        trust, _ = TrustScore.objects.get_or_create(user=request.user)
+        return Response(TrustScoreSerializer(trust).data)
+
+    @action(detail=False, methods=['get'], url_path='user-trust/(?P<user_id>[^/.]+)')
+    def user_trust(self, request, user_id=None):
+        try:
+            user = User.objects.get(pk=user_id)
+            trust, _ = TrustScore.objects.get_or_create(user=user)
+            return Response(TrustScoreSerializer(trust).data)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+
+
+# ============================================================
+# CHAT ENDPOINTS (REST fallback for history)
+# ============================================================
+
+@api_view(['GET'])
+def chat_history(request, task_id):
+    if not request.user.is_authenticated:
+        return Response([], status=401)
+    messages = ChatMessage.objects.filter(delivery_task_id=task_id)
+    return Response(ChatMessageSerializer(messages, many=True).data)
+
+
+@api_view(['POST'])
+def chat_send(request, task_id):
+    if not request.user.is_authenticated:
+        return Response({'error': 'Not authenticated'}, status=401)
+    content = request.data.get('content', '').strip()
+    if not content:
+        return Response({'error': 'Empty message'}, status=400)
+    try:
+        task = DeliveryTask.objects.get(pk=task_id)
+    except DeliveryTask.DoesNotExist:
+        return Response({'error': 'Task not found'}, status=404)
+    msg = ChatMessage.objects.create(
+        delivery_task=task,
+        sender=request.user,
+        content=content,
+    )
+    return Response(ChatMessageSerializer(msg).data, status=201)
+
+
 # ============================================================
 # STATS & NOTIFICATION ENDPOINTS
 # ============================================================
@@ -461,3 +530,118 @@ def mark_notification_read(request, pk):
         return Response({'status': 'read'})
     except Notification.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
+
+
+# ============================================================
+# AI CHATBOT ENDPOINT
+# ============================================================
+
+CHATBOT_SYSTEM_PROMPT = """You are the friendly guide bot for **FoodSaver Connect**, a web platform that rescues surplus food and delivers it to people in need. You help users navigate the platform, understand features, and get the most out of it.
+
+## Platform Overview
+FoodSaver Connect connects two types of users:
+- **Donors** — restaurants, caterers, households with surplus food
+- **Volunteer Scouts** — people who find hunger hotspots and deliver rescued food
+
+## How It Works (Full Workflow)
+1. Donors post surplus food with description, servings, food type, pickup address, ready/expiry times, and a hygiene declaration
+2. Volunteer scouts report hunger hotspots on the map (GPS-based) with urgency, people count, category
+3. A DeliveryTask links a food listing to a needy location
+4. Volunteers claim available rescues and deliver the food
+5. Delivery status progresses: Pending → Accepted → Picked Up → On Way → Delivered (or Failed)
+6. After delivery, both parties can rate each other (1-5 stars) which updates their Trust Score
+7. Donors and volunteers can chat in real-time during active deliveries
+
+## Donor Dashboard Features
+- **Home tab**: Shows impact stats (total donations, delivered count, people fed, locations helped), Trust Score display, active listings, and a map with nearby hunger hotspots
+- **Post Food tab**: Form to list surplus food — fields: description, food type, servings, ready time, expiry time, pickup window, address (GPS auto-detect), contact info, special instructions, photo upload, hygiene declaration checkbox, self-delivery option, save-as-template option. After GPS detection, nearby hunger hotspots are suggested.
+- **Track tab**: Shows all delivery tasks for the donor's food with live status, Chat button (to talk with assigned volunteer), and Rate Scout button (after delivery complete)
+- **Templates tab**: Saved food listing templates for quick re-posting of recurring donations
+- **Notifications tab**: Alerts for volunteer accepting donation, delivery complete, listing expiring
+
+## Volunteer Dashboard Features
+- **Home tab**: Shows stats (spots marked, deliveries completed, karma points, rank), Trust Score display, badges earned, live rescue map (red = hunger spots, green = available food, with urgency/food-type filters), and available rescue cards
+- **Mark Spot tab**: GPS-based form to report hunger hotspots — fields: location name, estimated people, urgency (High/Medium/Low), category (Children/Elderly/Mixed/General), food type needed, meal time, meals needed, notes, photo upload. Hotspots auto-expire after 4 hours.
+- **Deliveries tab**: Active and past rescue missions with Chat and Rate Donor buttons
+- **History tab**: Previously reported hotspots with option to re-verify and keep data fresh
+- **Notifications tab**: Alerts for nearby donations, delivery updates, new hotspot reports
+
+## Rating & Trust Score System
+- After a delivery is marked Delivered or Failed, both donor and scout can rate each other
+- Rating: 1-5 stars + optional comment, one rating per person per task
+- Trust Score: displayed on the Home tab, shows average rating and total review count
+- Higher trust scores build community reliability
+
+## Real-Time Chat
+- Available on active delivery tasks (Track tab for donors, Deliveries tab for volunteers)
+- Click "Chat" button on any task card to open the chat widget
+- Messages are instant (WebSocket) with REST fallback
+- Chat history is preserved
+
+## Gamification (Volunteers)
+- **Karma Points**: 100 per completed delivery, 25 per hotspot reported
+- **Ranks**: Rescue Rookie → Rising Scout → Weekend Warrior → Food Hero → Legend
+- **Badges**: First Report, Speed Deliver (5+ deliveries), Veteran Scout (15+), Road Warrior (50+ km), Community Hero (100+ people served)
+
+## Navigation
+- Bottom navigation bar with tabs
+- Bell icon (top-right) opens notifications
+- Logout button in bottom nav
+- Purple robot button (bottom-left) opens this guide chatbot
+
+## Food Safety
+- All listings have expiry times — expired food is flagged automatically
+- Donors must declare hygiene compliance
+- Max holding hours field helps volunteers plan pickups
+- Donors can manually expire listings if food becomes unsafe
+
+## Important Rules for Your Responses
+- Be concise, friendly, and helpful
+- Use the user's name when you know it
+- Give step-by-step instructions when explaining how to do something
+- Reference specific tab names and button names so users can follow along
+- If the user asks something unrelated to the platform, politely redirect them
+- Never make up features that don't exist
+- You can use **bold** for emphasis and numbered lists for steps
+"""
+
+
+@api_view(['POST'])
+def chatbot_message(request):
+    if not request.user.is_authenticated:
+        return Response({'error': 'Not authenticated'}, status=401)
+
+    user_message = request.data.get('message', '').strip()
+    conversation = request.data.get('conversation', [])
+    user_role = _get_user_role(request.user)
+    user_name = request.user.get_full_name() or request.user.username
+
+    if not user_message:
+        return Response({'error': 'Empty message'}, status=400)
+
+    api_key = getattr(django_settings, 'GEMINI_API_KEY', '')
+    if not api_key or api_key == 'YOUR_GEMINI_API_KEY_HERE':
+        return Response({'error': 'Gemini API key not configured'}, status=500)
+
+    system_instruction = CHATBOT_SYSTEM_PROMPT + f"\n\n## Current User Context\n- Name: {user_name}\n- Role: {user_role}\n- Tailor all responses to this user's role and capabilities."
+
+    # Build Gemini conversation history
+    gemini_history = []
+    for msg in conversation[-10:]:
+        if msg.get('role') == 'user':
+            gemini_history.append({'role': 'user', 'parts': [msg['content']]})
+        elif msg.get('role') == 'assistant':
+            gemini_history.append({'role': 'model', 'parts': [msg['content']]})
+
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(
+            model_name='gemini-2.0-flash',
+            system_instruction=system_instruction,
+        )
+        chat = model.start_chat(history=gemini_history)
+        response = chat.send_message(user_message)
+        reply = response.text
+        return Response({'reply': reply})
+    except Exception as e:
+        return Response({'error': f'AI service error: {str(e)}'}, status=502)

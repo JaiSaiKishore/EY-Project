@@ -42,6 +42,18 @@
                         <div class="impact-card"><div class="impact-icon purple"><i class="fa-solid fa-map-pin"></i></div><div class="impact-info"><h3 id="imp-locations">8</h3><p>Locations Helped</p></div></div>
                     </div>
 
+                    <!-- Trust Score -->
+                    <div class="dash-panel" style="margin-bottom:20px; display:flex; align-items:center; gap:16px; padding:16px 20px;">
+                        <div class="impact-icon orange"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div>
+                            <div style="font-weight:700; font-size:1rem;">Trust Score</div>
+                            <div class="trust-score-badge" id="my-trust">
+                                <span class="stars" id="trust-stars">----</span>
+                                <span class="score-num" id="trust-num">(loading...)</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- My Active Listings -->
                     <div class="dash-panel">
                         <div class="panel-top"><h3><i class="fa-solid fa-list"></i> My Active Listings</h3></div>
@@ -143,6 +155,64 @@
             </div>
         </main>
 
+        <!-- Chatbot Widget -->
+        <button class="chatbot-fab" id="chatbot-fab"><i class="fa-solid fa-robot"></i></button>
+        <div class="chatbot-panel" id="chatbot-panel">
+            <div class="chatbot-header">
+                <div class="chatbot-header-info">
+                    <div class="chatbot-avatar"><i class="fa-solid fa-robot"></i></div>
+                    <div class="chatbot-header-text">
+                        <h4>FoodSaver Guide</h4>
+                        <span>Always here to help</span>
+                    </div>
+                </div>
+                <button class="chatbot-close-btn" id="chatbot-close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="chatbot-body" id="chatbot-body"></div>
+            <div class="chatbot-quick-replies" id="chatbot-quick-replies"></div>
+            <div class="chatbot-input-bar">
+                <input type="text" id="chatbot-input" placeholder="Ask me anything..." autocomplete="off">
+                <button class="chatbot-send-btn" id="chatbot-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <!-- Rating Modal -->
+        <div class="modal-overlay" id="rating-modal">
+            <div class="modal-box">
+                <h3><i class="fa-solid fa-star"></i> Rate this interaction</h3>
+                <div class="star-rating" id="star-rating">
+                    <span class="star" data-val="1"><i class="fa-solid fa-star"></i></span>
+                    <span class="star" data-val="2"><i class="fa-solid fa-star"></i></span>
+                    <span class="star" data-val="3"><i class="fa-solid fa-star"></i></span>
+                    <span class="star" data-val="4"><i class="fa-solid fa-star"></i></span>
+                    <span class="star" data-val="5"><i class="fa-solid fa-star"></i></span>
+                </div>
+                <textarea class="rating-comment" id="rating-comment" placeholder="Optional: Share your experience..."></textarea>
+                <input type="hidden" id="rating-task-id">
+                <input type="hidden" id="rating-reviewee-id">
+                <div class="modal-actions">
+                    <button class="btn-cancel" id="rating-cancel">Cancel</button>
+                    <button class="btn-rate" id="rating-submit"><i class="fa-solid fa-paper-plane"></i> Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Widget -->
+        <div class="chat-widget" id="chat-widget">
+            <div class="chat-header">
+                <h4><i class="fa-solid fa-comments"></i> <span id="chat-title">Task Chat</span></h4>
+                <button class="chat-close" id="chat-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-empty">No messages yet. Say hello!</div>
+            </div>
+            <div class="chat-input-bar">
+                <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off">
+                <button class="chat-send-btn" id="chat-send"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <button class="chat-fab" id="chat-fab"><i class="fa-solid fa-comments"></i></button>
+
         <!-- Bottom Nav -->
         <nav class="dash-bottom-nav">
             <button class="nav-tab active" data-tab="tab-home"><i class="fa-solid fa-house"></i><span>Home</span></button>
@@ -156,6 +226,7 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         var displayName = "{{ display_name|escapejs }}";
+        var currentUserId = {{ request.user.id }};
         if (displayName) {
             document.getElementById('user-name').textContent = displayName;
             document.getElementById('greeting-name').textContent = displayName.split(' ')[0];
@@ -174,7 +245,6 @@
             });
         });
 
-        // Notification button goes to notifs tab
         document.getElementById('notif-btn').addEventListener('click', function() {
             tabs.forEach(function(b) { b.classList.remove('active'); });
             sections.forEach(function(s) { s.classList.remove('active'); });
@@ -189,6 +259,207 @@
             document.getElementById('imp-locations').textContent = d.locations_helped;
         }).catch(function(){});
 
+        // ===== Trust Score =====
+        function renderStars(avg) {
+            var s = '';
+            for (var i = 1; i <= 5; i++) {
+                s += i <= Math.round(avg) ? '★' : '☆';
+            }
+            return s;
+        }
+        fetch('/api/ratings/my_trust_score/').then(r => r.json()).then(function(d) {
+            document.getElementById('trust-stars').textContent = renderStars(d.average_rating);
+            document.getElementById('trust-num').textContent = d.average_rating.toFixed(1) + '/5 (' + d.total_reviews + ' reviews)';
+        }).catch(function(){});
+
+        // ===== Rating Modal =====
+        var ratingScore = 0;
+        document.querySelectorAll('#star-rating .star').forEach(function(star) {
+            star.addEventListener('click', function() {
+                ratingScore = parseInt(this.dataset.val);
+                document.querySelectorAll('#star-rating .star').forEach(function(s) {
+                    s.classList.toggle('active', parseInt(s.dataset.val) <= ratingScore);
+                });
+            });
+            star.addEventListener('mouseenter', function() {
+                var v = parseInt(this.dataset.val);
+                document.querySelectorAll('#star-rating .star').forEach(function(s) {
+                    s.classList.toggle('active', parseInt(s.dataset.val) <= v);
+                });
+            });
+            star.addEventListener('mouseleave', function() {
+                document.querySelectorAll('#star-rating .star').forEach(function(s) {
+                    s.classList.toggle('active', parseInt(s.dataset.val) <= ratingScore);
+                });
+            });
+        });
+
+        window.openRatingModal = function(taskId, revieweeId) {
+            ratingScore = 0;
+            document.querySelectorAll('#star-rating .star').forEach(function(s) { s.classList.remove('active'); });
+            document.getElementById('rating-comment').value = '';
+            document.getElementById('rating-task-id').value = taskId;
+            document.getElementById('rating-reviewee-id').value = revieweeId;
+            document.getElementById('rating-modal').classList.add('active');
+        };
+
+        document.getElementById('rating-cancel').addEventListener('click', function() {
+            document.getElementById('rating-modal').classList.remove('active');
+        });
+
+        document.getElementById('rating-submit').addEventListener('click', function() {
+            if (ratingScore < 1) { alert('Please select a rating'); return; }
+            var btn = this;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+            fetch('/api/ratings/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                body: JSON.stringify({
+                    reviewee: document.getElementById('rating-reviewee-id').value,
+                    delivery_task: document.getElementById('rating-task-id').value,
+                    score: ratingScore,
+                    comments: document.getElementById('rating-comment').value
+                })
+            }).then(r => r.json()).then(function() {
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit';
+                document.getElementById('rating-modal').classList.remove('active');
+                loadTracking();
+            }).catch(function() {
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit';
+                alert('Failed to submit rating');
+            });
+        });
+
+        // ===== Chat =====
+        var chatSocket = null;
+        var currentChatTaskId = null;
+
+        window.openChat = function(taskId) {
+            currentChatTaskId = taskId;
+            document.getElementById('chat-title').textContent = 'Task #' + taskId;
+            document.getElementById('chat-widget').classList.add('open');
+            document.getElementById('chat-fab').classList.remove('visible');
+            document.getElementById('chat-messages').innerHTML = '<div class="chat-empty">Connecting...</div>';
+
+            if (chatSocket) chatSocket.close();
+            var wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            chatSocket = new WebSocket(wsProtocol + window.location.host + '/ws/chat/' + taskId + '/');
+
+            chatSocket.onmessage = function(e) {
+                var data = JSON.parse(e.data);
+                if (data.type === 'history') {
+                    var container = document.getElementById('chat-messages');
+                    if (data.messages.length === 0) {
+                        container.innerHTML = '<div class="chat-empty">No messages yet. Say hello!</div>';
+                    } else {
+                        container.innerHTML = '';
+                        data.messages.forEach(function(m) { appendMessage(m); });
+                    }
+                } else if (data.type === 'message') {
+                    var container = document.getElementById('chat-messages');
+                    if (container.querySelector('.chat-empty')) container.innerHTML = '';
+                    appendMessage(data.message);
+                }
+            };
+            chatSocket.onerror = function() {
+                loadChatRest(taskId);
+            };
+        };
+
+        function loadChatRest(taskId) {
+            fetch('/api/chat/' + taskId + '/').then(r => r.json()).then(function(msgs) {
+                var container = document.getElementById('chat-messages');
+                container.innerHTML = '';
+                if (msgs.length === 0) {
+                    container.innerHTML = '<div class="chat-empty">No messages yet. Say hello!</div>';
+                } else {
+                    msgs.forEach(function(m) {
+                        appendMessage({
+                            sender_id: m.sender,
+                            sender_name: m.sender_details ? (m.sender_details.first_name + ' ' + m.sender_details.last_name).trim() || m.sender_details.username : 'User',
+                            content: m.content,
+                            timestamp: m.timestamp
+                        });
+                    });
+                }
+            }).catch(function(){});
+        }
+
+        function appendMessage(m) {
+            var container = document.getElementById('chat-messages');
+            var isMine = m.sender_id === currentUserId;
+            var time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            var div = document.createElement('div');
+            div.className = 'chat-msg ' + (isMine ? 'sent' : 'received');
+            div.innerHTML = (isMine ? '' : '<div class="msg-sender">' + escapeHtml(m.sender_name) + '</div>') +
+                escapeHtml(m.content) +
+                '<div class="msg-time">' + time + '</div>';
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        document.getElementById('chat-send').addEventListener('click', sendChatMessage);
+        document.getElementById('chat-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+
+        function sendChatMessage() {
+            var input = document.getElementById('chat-input');
+            var content = input.value.trim();
+            if (!content || !currentChatTaskId) return;
+            input.value = '';
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({content: content}));
+            } else {
+                fetch('/api/chat/' + currentChatTaskId + '/send/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                    body: JSON.stringify({content: content})
+                }).then(function() { loadChatRest(currentChatTaskId); }).catch(function(){});
+            }
+        }
+
+        document.getElementById('chat-close').addEventListener('click', function() {
+            document.getElementById('chat-widget').classList.remove('open');
+            if (currentChatTaskId) document.getElementById('chat-fab').classList.add('visible');
+        });
+        document.getElementById('chat-fab').addEventListener('click', function() {
+            if (currentChatTaskId) openChat(currentChatTaskId);
+        });
+
+        // ===== Load tracking with chat + rate buttons =====
+        function loadTracking() {
+            fetch('/api/tasks/').then(r => r.json()).then(function(data) {
+                var tasks = data.results || data;
+                var container = document.getElementById('tracking-list');
+                if (tasks.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-route"></i><p>No active deliveries to track.</p></div>';
+                    return;
+                }
+                container.innerHTML = '';
+                tasks.forEach(function(t) {
+                    var card = document.createElement('div');
+                    card.className = 'dash-panel';
+                    card.style.marginBottom = '12px';
+                    var foodName = t.food_details ? t.food_details.description : 'Food #' + t.food_listing;
+                    var scoutName = t.scout_details ? (t.scout_details.first_name + ' ' + t.scout_details.last_name).trim() || t.scout_details.username : 'Unassigned';
+                    var scoutId = t.scout;
+                    var status = '<span style="color:#61D2B4; font-weight:600;">' + t.status + '</span>';
+                    var actions = '<div style="display:flex; gap:8px; margin-top:10px;">';
+                    if (t.scout) {
+                        actions += '<button class="btn-sm-action" onclick="openChat(' + t.id + ')"><i class="fa-solid fa-comments"></i> Chat with Scout</button>';
+                    }
+                    if ((t.status === 'Delivered' || t.status === 'Failed') && scoutId) {
+                        actions += '<button class="btn-sm-action" style="color:#f59e0b;border-color:#f59e0b" onclick="openRatingModal(' + t.id + ',' + scoutId + ')"><i class="fa-solid fa-star"></i> Rate Scout</button>';
+                    }
+                    actions += '</div>';
+                    card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:start"><div><strong>' + escapeHtml(foodName) + '</strong><br><span style="font-size:0.8rem;color:#888">Scout: ' + escapeHtml(scoutName) + '</span></div><div>' + status + '</div></div>' + actions;
+                    container.appendChild(card);
+                });
+            }).catch(function(){});
+        }
+        loadTracking();
+
         // Init map
         var map = L.map('donor-map').setView([13.0827, 80.2707], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'OSM'}).addTo(map);
@@ -201,7 +472,6 @@
                 navigator.geolocation.getCurrentPosition(function(pos) {
                     document.getElementById('f-address').value = 'Lat: ' + pos.coords.latitude.toFixed(4) + ', Lng: ' + pos.coords.longitude.toFixed(4);
                     gpsBtn.innerHTML = '<i class="fa-solid fa-check" style="color:#2d9a7a"></i>';
-                    // Fetch nearby hotspots
                     fetch('/api/food/nearby_hotspots/?lat=' + pos.coords.latitude + '&lng=' + pos.coords.longitude + '&radius=5')
                         .then(r => r.json()).then(function(spots) {
                             if (spots.length) {
@@ -233,7 +503,22 @@
                 setTimeout(function() { btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Post for Rescue'; btn.style.background = ''; }, 2000);
             }, 1000);
         });
+
+        // Helpers
+        function getCookie(name) {
+            var v = document.cookie.match('(^|;)\\s*' + name + '=([^;]*)');
+            return v ? decodeURIComponent(v[2]) : '';
+        }
+        function escapeHtml(str) {
+            var d = document.createElement('div');
+            d.appendChild(document.createTextNode(str));
+            return d.innerHTML;
+        }
     });
+    </script>
+    <script src="{% static 'core/js/chatbot.js' %}"></script>
+    <script>
+        FoodSaverBot.init({ role: 'donor', userName: "{{ display_name|escapejs }}".split(' ')[0] || 'Donor' });
     </script>
 </body>
 </html>

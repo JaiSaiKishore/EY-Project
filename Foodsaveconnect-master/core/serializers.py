@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import FoodListing, NeedyLocation, DeliveryTask, ScoutBookmark, UserProfile, Notification
+from .models import FoodListing, NeedyLocation, DeliveryTask, ScoutBookmark, UserProfile, Notification, Rating, TrustScore, ChatMessage
 from django.contrib.auth.models import User
 
 
@@ -74,3 +74,30 @@ class ScoutBookmarkSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScoutBookmark
         fields = '__all__'
+
+
+class RatingSerializer(serializers.ModelSerializer):
+    reviewer_details = UserSerializer(source='reviewer', read_only=True)
+    reviewee_details = UserSerializer(source='reviewee', read_only=True)
+
+    class Meta:
+        model = Rating
+        fields = '__all__'
+        read_only_fields = ['reviewer']
+
+
+class TrustScoreSerializer(serializers.ModelSerializer):
+    user_details = UserSerializer(source='user', read_only=True)
+
+    class Meta:
+        model = TrustScore
+        fields = '__all__'
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_details = UserSerializer(source='sender', read_only=True)
+
+    class Meta:
+        model = ChatMessage
+        fields = '__all__'
+        read_only_fields = ['sender']

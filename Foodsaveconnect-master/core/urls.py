@@ -7,6 +7,7 @@ router.register(r'food', views.FoodListingViewSet, basename='food')
 router.register(r'locations', views.NeedyLocationViewSet, basename='locations')
 router.register(r'tasks', views.DeliveryTaskViewSet, basename='tasks')
 router.register(r'bookmarks', views.ScoutBookmarkViewSet, basename='bookmarks')
+router.register(r'ratings', views.RatingViewSet, basename='ratings')
 
 urlpatterns = [
     path('', views.landing_view, name='landing'),
@@ -20,4 +21,7 @@ urlpatterns = [
     path('api/scout-stats/', views.scout_stats, name='scout-stats'),
     path('api/notifications/', views.notifications_list, name='notifications'),
     path('api/notifications/<int:pk>/read/', views.mark_notification_read, name='notification-read'),
+    path('api/chat/<int:task_id>/', views.chat_history, name='chat-history'),
+    path('api/chat/<int:task_id>/send/', views.chat_send, name='chat-send'),
+    path('api/chatbot/', views.chatbot_message, name='chatbot'),
 ]
